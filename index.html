@@ -1,0 +1,2262 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#4A7DFF">
+  <meta name="description" content="AI가 시공 공간 사진을 분석해 어울리는 벽지·필름을 추천하고, 손실률·인건비까지 반영한 정확한 시공 견적을 자동으로 산출하는 스마트 인테리어 앱">
+  <title>2026 미래유망 아이디어 챌린지</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- React 18 + Babel standalone (CDN, 빌드 과정 없이 브라우저에서 바로 실행) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+
+  <style>
+    :root {
+      --ios-bg: #F2F2F7;
+      --ios-card: #FFFFFF;
+      --ios-dark-text: #1C1C1E;
+      --ios-gray-text: #8E8E93;
+      --ios-blue: #007AFF;
+      --ios-blue2: #4A7DFF;
+      --ios-green: #34C759;
+      --ios-orange: #FF9500;
+      --ios-red: #FF3B30;
+      --border-color: rgba(60, 60, 67, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, 'SF Pro Display', BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--ios-bg);
+      color: var(--ios-dark-text);
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .phone-viewport {
+      width: 100%;
+      max-width: 430px;
+      background-color: var(--ios-bg);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .app-header {
+      padding: 24px 20px 12px 20px;
+      position: sticky;
+      top: 0;
+      background: rgba(242, 242, 247, 0.55);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      z-index: 90;
+      border-bottom: 1px solid rgba(60, 60, 67, 0.05);
+    }
+
+    .app-header h1 {
+      font-size: 30px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .app-header h1 .logo-text {
+      color: #4A7DFF;
+    }
+
+    .app-header h1 .logo-gear {
+      color: #8FB4FA;
+      font-size: 26px;
+    }
+
+    .app-header p {
+      font-size: 13px;
+      color: var(--ios-gray-text);
+      margin-top: 4px;
+      text-align: center;
+    }
+
+    .scroll-content {
+      padding: 16px 16px 260px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .ios-group-card {
+      background: var(--ios-card);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ios-gray-text);
+      text-transform: uppercase;
+      letter-spacing: -0.2px;
+    }
+
+    .target-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      background: rgba(120, 120, 128, 0.08);
+      border-radius: 12px;
+      padding: 4px;
+      gap: 4px;
+    }
+
+    .target-btn {
+      background: none;
+      border: none;
+      padding: 10px 4px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ios-dark-text);
+      border-radius: 8px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+
+    .target-btn.active {
+      background: #FFFFFF;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      font-weight: 700;
+    }
+
+    .ios-list {
+      background: #FFFFFF;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .ios-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .ios-row:last-child {
+      border-bottom: none;
+    }
+
+    .ios-row label {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--ios-dark-text);
+    }
+
+    .ios-input-wrapper {
+      display: flex;
+      align-items: center;
+      background: #F2F2F7;
+      border-radius: 8px;
+      padding: 8px 12px;
+      width: 150px;
+    }
+
+    .ios-input-wrapper input {
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: right;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--ios-dark-text);
+      outline: none;
+    }
+
+    .ios-input-wrapper .unit {
+      margin-left: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ios-gray-text);
+    }
+
+    .preset-chips {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+    }
+
+    .preset-chips::-webkit-scrollbar {
+      display: none;
+    }
+
+    .chip {
+      background: #F2F2F7;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ios-dark-text);
+      white-space: nowrap;
+      cursor: pointer;
+      transition: background 0.15s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .chip:active {
+      background: rgba(0, 122, 255, 0.1);
+      color: var(--ios-blue);
+    }
+
+    .chip.favorite-chip {
+      background: rgba(0, 122, 255, 0.05);
+      border: 1px solid rgba(0, 122, 255, 0.15);
+      color: var(--ios-blue);
+    }
+
+    .chip.favorite-chip:active {
+      background: rgba(0, 122, 255, 0.15);
+    }
+
+    .chip .delete-fav-btn {
+      background: none;
+      border: none;
+      color: var(--ios-red);
+      font-size: 12px;
+      padding-left: 4px;
+      cursor: pointer;
+    }
+
+    .action-button {
+      background: var(--ios-blue);
+      color: #FFF;
+      border: none;
+      border-radius: 12px;
+      padding: 16px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .action-button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .secondary-action-button {
+      background: rgba(0, 122, 255, 0.1);
+      color: var(--ios-blue);
+      border: none;
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s ease;
+    }
+
+    .secondary-action-button:active {
+      background: rgba(0, 122, 255, 0.2);
+    }
+
+    .action-button:active {
+      opacity: 0.8;
+    }
+
+    .added-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #F2F2F7;
+      padding: 12px 16px;
+      border-radius: 12px;
+      margin-bottom: 8px;
+    }
+
+    .item-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .item-info .title {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .item-info .spec {
+      font-size: 12px;
+      color: var(--ios-gray-text);
+    }
+
+    .delete-btn {
+      background: none;
+      border: none;
+      color: var(--ios-red);
+      font-size: 18px;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    .ios-bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 430px;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      border-top: 1px solid var(--border-color);
+      border-radius: 20px 20px 0 0;
+      padding: 16px 20px calc(16px + env(safe-area-inset-bottom)) 20px;
+      z-index: 100;
+      box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .dashboard-box {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .dashboard-box .label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--ios-gray-text);
+      text-transform: uppercase;
+    }
+
+    .dashboard-box .value {
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .dashboard-box .value.danger {
+      color: var(--ios-red);
+    }
+
+    .dashboard-box .value.prime {
+      color: var(--ios-orange);
+    }
+
+    .total-divider {
+      height: 1px;
+      background: var(--border-color);
+    }
+
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .total-row .total-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--ios-dark-text);
+    }
+
+    .total-row .total-price {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--ios-blue);
+      letter-spacing: -0.5px;
+    }
+
+    /* ===================== AI 추천 플로우 ===================== */
+
+    .ai-hero-card {
+      background: linear-gradient(135deg, #4A7DFF 0%, #6FA0FF 100%);
+      border-radius: 20px;
+      padding: 24px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      color: #fff;
+      box-shadow: 0 10px 24px rgba(74, 125, 255, 0.28);
+    }
+
+    .ai-hero-card .ai-hero-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      margin-bottom: 6px;
+    }
+
+    .ai-hero-card h2 {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .ai-hero-card p {
+      font-size: 12.5px;
+      opacity: 0.92;
+      line-height: 1.5;
+    }
+
+    .ai-hero-button {
+      margin-top: 10px;
+      background: #fff;
+      color: var(--ios-blue2);
+      border: none;
+      border-radius: 12px;
+      padding: 13px;
+      font-size: 14.5px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .step-eyebrow {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ios-blue);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .screen-title {
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--ios-dark-text);
+      margin-top: 2px;
+    }
+
+    .screen-sub {
+      font-size: 12.5px;
+      color: var(--ios-gray-text);
+      line-height: 1.5;
+      margin-top: 2px;
+    }
+
+    .photo-drop {
+      background: var(--ios-card);
+      border-radius: 16px;
+      aspect-ratio: 4/3;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      cursor: pointer;
+      overflow: hidden;
+      position: relative;
+      border: 1.5px dashed rgba(0,122,255,0.35);
+    }
+
+    .photo-drop img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .photo-drop .drop-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      background: rgba(0,122,255,0.08);
+      color: var(--ios-blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+
+    .photo-drop .drop-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ios-blue);
+    }
+
+    .photo-drop .drop-hint {
+      font-size: 11.5px;
+      color: var(--ios-gray-text);
+    }
+
+    .photo-badge {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0,0,0,0.55);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 6px 10px;
+      border-radius: 20px;
+    }
+
+    .photo-remove-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.55);
+      color: #fff;
+      border: none;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .analyzing-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      padding: 70px 20px;
+      text-align: center;
+    }
+
+    .spinner {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      border: 4px solid rgba(0,122,255,0.15);
+      border-top-color: var(--ios-blue);
+      animation: spin 0.85s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .analyzing-title {
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .analyzing-sub {
+      font-size: 12.5px;
+      color: var(--ios-gray-text);
+      max-width: 260px;
+      line-height: 1.6;
+    }
+
+    .analyzing-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 100%;
+      max-width: 260px;
+      text-align: left;
+      margin-top: 4px;
+    }
+
+    .analyzing-step {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12.5px;
+      color: var(--ios-gray-text);
+    }
+
+    .analyzing-step.done {
+      color: var(--ios-dark-text);
+    }
+
+    .analyzing-step i {
+      width: 16px;
+      color: var(--ios-green);
+    }
+
+    .env-photo-strip {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      background: var(--ios-card);
+      border-radius: 14px;
+      padding: 10px;
+    }
+
+    .env-photo-strip img {
+      width: 54px;
+      height: 54px;
+      border-radius: 10px;
+      object-fit: cover;
+    }
+
+    .env-photo-strip .name {
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .env-photo-strip .sub {
+      font-size: 11.5px;
+      color: var(--ios-gray-text);
+    }
+
+    .env-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .env-card {
+      background: var(--ios-card);
+      border-radius: 16px;
+      padding: 16px 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 8px;
+    }
+
+    .env-dot-wrap {
+      width: 100%;
+      height: 26px;
+      border-radius: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .env-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .env-title {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .env-sub {
+      font-size: 11.5px;
+      color: var(--ios-gray-text);
+      line-height: 1.4;
+    }
+
+    .rec-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .rec-card {
+      background: var(--ios-card);
+      border-radius: 16px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.04);
+    }
+
+    .rec-swatch {
+      width: 100%;
+      height: 64px;
+      border-radius: 12px;
+      position: relative;
+    }
+
+    .rec-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: var(--ios-blue);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 5px 10px;
+      border-radius: 20px;
+    }
+
+    .rec-brand {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--ios-blue);
+      text-transform: uppercase;
+    }
+
+    .rec-name {
+      font-size: 15px;
+      font-weight: 700;
+      margin-top: 1px;
+    }
+
+    .rec-reason {
+      font-size: 12px;
+      color: var(--ios-gray-text);
+      line-height: 1.45;
+    }
+
+    .rec-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--ios-gray-text);
+    }
+
+    .rec-select-btn {
+      background: rgba(0,122,255,0.1);
+      color: var(--ios-blue);
+      border: none;
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .rec-select-btn.chosen {
+      background: var(--ios-blue);
+      color: #fff;
+    }
+
+    .ai-banner {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(52, 199, 89, 0.1);
+      border: 1px solid rgba(52, 199, 89, 0.25);
+      color: #1c7a37;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 12.5px;
+      font-weight: 600;
+      line-height: 1.4;
+    }
+
+    .ai-banner i {
+      color: var(--ios-green);
+      font-size: 16px;
+    }
+
+    .field-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field-row label {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--ios-gray-text);
+    }
+
+    .field-row input[type="text"] {
+      border: none;
+      background: #F2F2F7;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--ios-dark-text);
+      outline: none;
+    }
+
+    .error-text {
+      font-size: 12px;
+      color: var(--ios-red);
+      font-weight: 600;
+    }
+
+    .sensor-icon-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 10px;
+      padding: 28px 20px;
+    }
+
+    .sensor-icon-circle {
+      width: 56px;
+      height: 56px;
+      border-radius: 18px;
+      background: rgba(0,122,255,0.08);
+      color: var(--ios-blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .sensor-status-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--ios-gray-text);
+    }
+
+    .sensor-status-row.connected {
+      color: #1c7a37;
+    }
+
+    .sensor-status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--ios-gray-text);
+    }
+
+    .sensor-status-row.connected .sensor-status-dot {
+      background: var(--ios-green);
+    }
+
+    .sensor-live-card {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding: 22px 20px;
+    }
+
+    .sensor-live-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: rgba(0,122,255,0.08);
+      color: var(--ios-blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+
+    .sensor-big-value {
+      display: flex;
+      align-items: baseline;
+      gap: 3px;
+    }
+
+    .sensor-big-value .num {
+      font-size: 34px;
+      font-weight: 800;
+      color: var(--ios-blue);
+      letter-spacing: -0.5px;
+    }
+
+    .sensor-big-value .unit {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--ios-blue);
+    }
+
+    .sensor-live-sub {
+      font-size: 12.5px;
+      color: var(--ios-gray-text);
+      margin-top: 2px;
+    }
+
+    .link-button {
+      background: none;
+      border: none;
+      color: var(--ios-blue);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 4px;
+      align-self: center;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo, useRef } = React;
+
+    /* ===================== 데이터 ===================== */
+
+    // 표준 공정 데이터베이스 (ERP 기준 품셈 및 단가 설정)
+    // - laborRatePerQty: 개수(수량) 기반 품셈 (문/창문 등 개체 단위 시공)
+    // - laborRatePerArea: 면적(㎡) 기반 품셈 (도배 등 면 단위 시공)
+    const processDB = {
+      door:      { name: "문짝/문틀",  laborRatePerQty: 0.25, dayRate: 250000 },
+      sash:      { name: "샷시/창문",  laborRatePerQty: 0.40, dayRate: 250000 },
+      closet:    { name: "붙박이장",   laborRatePerQty: 0.30, dayRate: 250000 },
+      furniture: { name: "일반가구",   laborRatePerQty: 0.20, dayRate: 250000 },
+      kitchen:   { name: "싱크/주방",  laborRatePerQty: 0.35, dayRate: 250000 },
+      etc:       { name: "기타부위",   laborRatePerQty: 0.15, dayRate: 250000 },
+      wallpaperWall:    { name: "벽도배",   laborRatePerArea: 0.030, dayRate: 200000 },
+      wallpaperCeiling: { name: "천장도배", laborRatePerArea: 0.045, dayRate: 200000 }
+    };
+
+    const targetList = [
+      { key: "door",             label: "문짝/문틀 🚪" },
+      { key: "sash",              label: "샷시/창문 🪟" },
+      { key: "closet",            label: "붙박이장 👕" },
+      { key: "furniture",         label: "일반가구 🛋️" },
+      { key: "kitchen",           label: "싱크/주방 🍳" },
+      { key: "etc",               label: "기타부위 📝" },
+      { key: "wallpaperWall",     label: "벽도배 🧱" },
+      { key: "wallpaperCeiling",  label: "천장도배 🏠" }
+    ];
+
+    const targetConfig = {
+      door: {
+        wLabel: "문 가로(W)", hLabel: "문 세로(H)", name: "문짝/문틀",
+        presets: [
+          { name: "기본 방문 (90x210)", w: 90, h: 210 },
+          { name: "문틀 감기 (20x210)", w: 20, h: 210 },
+          { name: "화장실문 (80x200)", w: 80, h: 200 }
+        ]
+      },
+      sash: {
+        wLabel: "창문 가로(W)", hLabel: "창문 세로(H)", name: "샷시/창문",
+        presets: [
+          { name: "소형 단창 (120x120)", w: 120, h: 120 },
+          { name: "베란다 거실창 (180x230)", w: 180, h: 230 },
+          { name: "창틀 프레임 (15x230)", w: 15, h: 230 }
+        ]
+      },
+      closet: {
+        wLabel: "문짝 가로(W)", hLabel: "장 높이(H)", name: "붙박이장",
+        presets: [
+          { name: "일반 옷장문 (45x220)", w: 45, h: 220 },
+          { name: "와이드문 (60x220)", w: 60, h: 220 },
+          { name: "신발장 문 (40x200)", w: 40, h: 200 }
+        ]
+      },
+      furniture: {
+        wLabel: "가구 가로(W)", hLabel: "가구 세로(H)", name: "일반가구",
+        presets: [
+          { name: "화장대 상판 (100x60)", w: 100, h: 60 },
+          { name: "책상 탑 (120x70)", w: 120, h: 70 },
+          { name: "3단 서랍장 전면 (80x40)", w: 80, h: 40 }
+        ]
+      },
+      kitchen: {
+        wLabel: "문 가로(W)", hLabel: "문 세로(H)", name: "싱크/주방",
+        presets: [
+          { name: "싱크 상부장 (40x70)", w: 40, h: 70 },
+          { name: "싱크 하부장 (45x75)", w: 45, h: 75 },
+          { name: "싱크대 상판 (240x60)", w: 240, h: 60 }
+        ]
+      },
+      etc: {
+        wLabel: "가로(W)", hLabel: "세로(H)", name: "기타부위",
+        presets: [
+          { name: "아트월 알판 (60x120)", w: 60, h: 120 },
+          { name: "걸레받이 m당 (8x100)", w: 8, h: 100 }
+        ]
+      },
+      wallpaperWall: {
+        wLabel: "벽 가로(W)", hLabel: "벽 세로(H)", name: "벽도배",
+        presets: [
+          { name: "거실 벽면 (400x230)", w: 400, h: 230 },
+          { name: "안방 벽면 (350x230)", w: 350, h: 230 },
+          { name: "작은방 벽면 (300x230)", w: 300, h: 230 }
+        ]
+      },
+      wallpaperCeiling: {
+        wLabel: "천장 가로(W)", hLabel: "천장 세로(H)", name: "천장도배",
+        presets: [
+          { name: "거실 천장 (400x350)", w: 400, h: 350 },
+          { name: "안방 천장 (350x300)", w: 350, h: 300 },
+          { name: "작은방 천장 (300x250)", w: 300, h: 250 }
+        ]
+      }
+    };
+
+    // 자재/브랜드 검색 데이터베이스: 브랜드 10종 × 소재 10종 = 총 100개
+    const materialBrands = ["한샘", "LX하우시스", "현대엘앤씨", "영림임업", "KCC", "삼정데코", "동화기업", "이건마루", "보든인테리어", "리빙아트"];
+    const materialTypes = [
+      { key: "솔리드",     label: "무광 솔리드",       width: 122 },
+      { key: "우드",       label: "내추럴 우드그레인", width: 122 },
+      { key: "오크우드",   label: "오크 우드톤",       width: 122 },
+      { key: "체리우드",   label: "체리 우드톤",       width: 122 },
+      { key: "하이그로시", label: "하이그로시 유광",   width: 137 },
+      { key: "메탈",       label: "메탈릭 헤어라인",   width: 122 },
+      { key: "스톤",       label: "스톤 패턴",         width: 122 },
+      { key: "패브릭",     label: "패브릭 텍스처",     width: 137 },
+      { key: "마블",       label: "마블 패턴",         width: 122 },
+      { key: "컬러",       label: "비비드 컬러",       width: 122 }
+    ];
+
+    function buildMaterialDB() {
+      const db = [];
+      let seq = 1;
+      materialBrands.forEach((brand, bi) => {
+        materialTypes.forEach((t, ti) => {
+          const code = String(seq).padStart(3, '0');
+          const price = 38000 + (ti * 1200) + (bi * 700) + ((seq % 5) * 500);
+          db.push({ id: seq, brand, type: t.key, name: `${t.label} ${code}`, width: t.width, price });
+          seq++;
+        });
+      });
+      return db;
+    }
+
+    const materialDB = buildMaterialDB();
+
+    const defaultFavorites = [
+      { name: "무광 솔리드 화이트", width: 122, price: 45000 },
+      { name: "현대 보들 S176", width: 122, price: 48000 },
+      { name: "영림 발크 120", width: 122, price: 42000 }
+    ];
+
+    // 소재별 대표 스와치 컬러 (추천 카드 미리보기용)
+    const typeSwatchColor = {
+      "솔리드": "#E7ECF5", "우드": "#E7D9C3", "오크우드": "#DFC9A6", "체리우드": "#D8B49B",
+      "하이그로시": "#DCEBFC", "메탈": "#DCE0E3", "스톤": "#E3E1DD", "패브릭": "#EDE6DA",
+      "마블": "#EDEEF0", "컬러": "#FBD8D8"
+    };
+
+    const TAG_COLORS = { orange: "#FF9500", blue: "#007AFF", green: "#34C759", red: "#FF3B30", gray: "#8E8E93" };
+
+    /* ===================== 순수 계산 로직 ===================== */
+
+    function calcTotals(items, film) {
+      const filmWidthCm = parseFloat(film.width);
+      const rollPrice = parseFloat(film.price);
+      const cutMarginCm = parseFloat(film.cutMargin) || 0;
+
+      const empty = { netArea: 0, neededLength: 0, lossRate: 0, lossCost: 0, manpower: 0, laborCost: 0, totalPrice: 0 };
+
+      if (isNaN(filmWidthCm) || filmWidthCm <= 0 || isNaN(rollPrice) || rollPrice < 0) {
+        return empty;
+      }
+
+      let totalNetArea = 0;
+      let totalNeededLengthM = 0;
+      let totalManpower = 0;
+      let totalLaborCost = 0;
+
+      items.forEach(item => {
+        const singleArea = (item.width / 100) * (item.height / 100);
+        totalNetArea += singleArea * item.qty;
+
+        const strips = Math.ceil(item.width / filmWidthCm);
+        const cutLengthM = (item.height + cutMarginCm) / 100;
+        totalNeededLengthM += strips * cutLengthM * item.qty;
+
+        const dbConfig = processDB[item.targetKey];
+        if (dbConfig) {
+          let itemManpower;
+          if (dbConfig.laborRatePerArea) {
+            itemManpower = (singleArea * item.qty) * dbConfig.laborRatePerArea;
+          } else {
+            itemManpower = item.qty * dbConfig.laborRatePerQty;
+          }
+          totalManpower += itemManpower;
+          totalLaborCost += itemManpower * dbConfig.dayRate;
+        }
+      });
+
+      if (totalNetArea === 0) {
+        return empty;
+      }
+
+      const pricePerMeter = rollPrice / 50;
+      const totalMaterialPrice = Math.round(totalNeededLengthM * pricePerMeter);
+
+      const purchasedArea = totalNeededLengthM * (filmWidthCm / 100);
+      const wasteArea = Math.max(0, purchasedArea - totalNetArea);
+      const lossPercentage = purchasedArea > 0 ? (wasteArea / purchasedArea) * 100 : 0;
+      const lossCost = Math.round(totalMaterialPrice * (lossPercentage / 100));
+
+      const finalTotalPrice = totalMaterialPrice + totalLaborCost;
+
+      return {
+        netArea: totalNetArea,
+        neededLength: totalNeededLengthM,
+        lossRate: lossPercentage,
+        lossCost,
+        manpower: totalManpower,
+        laborCost: totalLaborCost,
+        totalPrice: finalTotalPrice
+      };
+    }
+
+    function findNearbyShops() {
+      const query = encodeURIComponent('인테리어 필름 도배 시공업체');
+      const openMaps = (lat, lng) => {
+        const url = lat != null
+          ? `https://www.google.com/maps/search/${query}/@${lat},${lng},14z`
+          : `https://www.google.com/maps/search/${query}`;
+        window.open(url, '_blank');
+      };
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => openMaps(pos.coords.latitude, pos.coords.longitude),
+          () => openMaps(null, null)
+        );
+      } else {
+        openMaps(null, null);
+      }
+    }
+
+    /* ===================== AI 환경 분석 엔진 =====================
+       실제 업로드된 사진의 픽셀 데이터를 canvas로 직접 읽어
+       평균 밝기 / 색 온도(RGB 비율) / 인접 픽셀 대비(엣지량) / 채도를
+       계산하는 클라이언트 사이드 이미지 분석 로직입니다.
+       (별도의 서버·유료 AI API 없이 브라우저에서 즉시 동작합니다.)
+       습도처럼 사진만으로 100% 확정할 수 없는 값은 "추정치"로 표기하며,
+       색상·채도 데이터를 기반으로 한 근사 모델입니다.
+    ================================================================ */
+
+    function readFileAsDataURL(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('파일을 읽지 못했습니다.'));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function analyzeImageDataUrl(dataUrl) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const maxDim = 160;
+            const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+            const w = Math.max(1, Math.round(img.width * scale));
+            const h = Math.max(1, Math.round(img.height * scale));
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            const data = ctx.getImageData(0, 0, w, h).data;
+
+            let sumR = 0, sumG = 0, sumB = 0, sumLum = 0, sumSat = 0, count = 0;
+            for (let i = 0; i < data.length; i += 4) {
+              const r = data[i], g = data[i + 1], b = data[i + 2];
+              sumR += r; sumG += g; sumB += b;
+              sumLum += 0.299 * r + 0.587 * g + 0.114 * b;
+              const rn = r / 255, gn = g / 255, bn = b / 255;
+              const mx = Math.max(rn, gn, bn), mn = Math.min(rn, gn, bn);
+              sumSat += mx === 0 ? 0 : (mx - mn) / mx;
+              count++;
+            }
+
+            let edgeSum = 0, edgeCount = 0;
+            for (let y = 1; y < h; y++) {
+              for (let x = 1; x < w; x++) {
+                const idx = (y * w + x) * 4;
+                const idxL = (y * w + x - 1) * 4;
+                const idxU = ((y - 1) * w + x) * 4;
+                const lum = 0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
+                const lumL = 0.299 * data[idxL] + 0.587 * data[idxL + 1] + 0.114 * data[idxL + 2];
+                const lumU = 0.299 * data[idxU] + 0.587 * data[idxU + 1] + 0.114 * data[idxU + 2];
+                edgeSum += Math.abs(lum - lumL) + Math.abs(lum - lumU);
+                edgeCount++;
+              }
+            }
+
+            resolve({
+              avgLum: sumLum / count,
+              avgR: sumR / count,
+              avgG: sumG / count,
+              avgB: sumB / count,
+              avgSat: sumSat / count,
+              avgEdge: edgeCount ? edgeSum / edgeCount : 0,
+              width: img.width,
+              height: img.height
+            });
+          } catch (e) {
+            reject(e);
+          }
+        };
+        img.onerror = () => reject(new Error('이미지를 불러오지 못했습니다.'));
+        img.src = dataUrl;
+      });
+    }
+
+    function deriveEnvironmentTags(m) {
+      // 습도는 더 이상 사진으로 추정하지 않습니다 (실제 습도 센서 값을 사용).
+      // 여기서는 사진으로 실제 확인 가능한 채광 · 벽면 상태 · 톤만 분석합니다.
+      let light;
+      if (m.avgLum >= 165) light = { label: "강한 직사광", level: "high", color: "orange" };
+      else if (m.avgLum >= 100) light = { label: "보통 채광", level: "mid", color: "blue" };
+      else light = { label: "약한 · 간접광", level: "low", color: "gray" };
+
+      const warmth = m.avgR - m.avgB;
+      let tone;
+      if (warmth > 10) tone = { label: "따뜻한 웜톤", level: "warm", color: "orange" };
+      else if (warmth < -10) tone = { label: "차가운 쿨톤", level: "cool", color: "blue" };
+      else tone = { label: "중립 뉴트럴톤", level: "neutral", color: "green" };
+
+      let wall;
+      if (m.avgEdge >= 16) wall = { label: "요철 · 얼룩 감지", level: "rough", color: "red" };
+      else if (m.avgEdge >= 8) wall = { label: "약간의 요철", level: "mid", color: "orange" };
+      else wall = { label: "평탄한 벽면", level: "smooth", color: "green" };
+
+      return { light, tone, wall };
+    }
+
+    /* ===================== 습도 센서 연동 (Web Bluetooth) =====================
+       스마트폰 자체에는 습도 센서가 없기 때문에, 표준 BLE GATT 규격인
+       Environmental Sensing Service(0x181A)의 Humidity(0x2A6F) /
+       Temperature(0x2A6E) characteristic을 그대로 사용합니다.
+       이 규격을 지원하는 실제 블루투스 습도계라면 기종에 관계없이 연결됩니다.
+       (Web Bluetooth는 Chrome/Edge 등 일부 브라우저 + HTTPS 환경에서만 동작하며,
+        지원하지 않는 환경이나 주변에 센서가 없을 때를 대비해 수동 입력을 제공합니다.)
+    ============================================================================ */
+
+    const ESS_SERVICE_UUID = 0x181A;
+    const HUMIDITY_CHAR_UUID = 0x2A6F;
+    const TEMPERATURE_CHAR_UUID = 0x2A6E;
+
+    async function connectHumiditySensor() {
+      if (!navigator.bluetooth) {
+        const err = new Error('이 브라우저는 Web Bluetooth를 지원하지 않습니다.');
+        err.code = 'UNSUPPORTED';
+        throw err;
+      }
+      const device = await navigator.bluetooth.requestDevice({
+        filters: [{ services: [ESS_SERVICE_UUID] }],
+        optionalServices: [ESS_SERVICE_UUID]
+      });
+      const server = await device.gatt.connect();
+      const service = await server.getPrimaryService(ESS_SERVICE_UUID);
+
+      const humidityChar = await service.getCharacteristic(HUMIDITY_CHAR_UUID);
+      const humidityValue = await humidityChar.readValue();
+      const humidity = humidityValue.getUint16(0, true) / 100; // 0.01% 단위
+
+      let temperature = null;
+      try {
+        const tempChar = await service.getCharacteristic(TEMPERATURE_CHAR_UUID);
+        const tempValue = await tempChar.readValue();
+        temperature = tempValue.getInt16(0, true) / 100; // 0.01°C 단위
+      } catch (e) {
+        // 온도 characteristic이 없는 기기도 있으므로 무시하고 진행합니다.
+      }
+
+      return { deviceName: device.name || '습도 센서', humidity, temperature };
+    }
+
+    function humidityTagFromValue(pct) {
+      let level, color;
+      if (pct >= 60) { level = 'high'; color = 'blue'; }
+      else if (pct >= 40) { level = 'mid'; color = 'green'; }
+      else { level = 'low'; color = 'gray'; }
+      return { label: `${pct.toFixed(1)}%`, level, color, value: pct };
+    }
+
+    // 조건별 소재 선호 가중치 (양수: 추천, 음수: 비추천)
+    const typePreferences = {
+      light_high:  { "솔리드": 2, "스톤": 2, "마블": 1, "컬러": 1, "하이그로시": -2, "메탈": -1 },
+      light_mid:   { "우드": 1, "오크우드": 1, "체리우드": 1, "솔리드": 1 },
+      light_low:   { "하이그로시": 2, "메탈": 1, "컬러": 1 },
+
+      humidity_high: { "하이그로시": 2, "스톤": 2, "메탈": 1, "패브릭": -2, "우드": -1 },
+      humidity_mid:  { "솔리드": 1, "오크우드": 1 },
+      humidity_low:  { "패브릭": 1, "우드": 1, "체리우드": 1 },
+
+      wall_rough:  { "패브릭": 2, "우드": 1, "오크우드": 1, "체리우드": 1, "마블": 1, "하이그로시": -2, "메탈": -2 },
+      wall_mid:    { "솔리드": 1, "오크우드": 1 },
+      wall_smooth: { "하이그로시": 1, "메탈": 1, "마블": 1 },
+
+      tone_warm:    { "우드": 2, "오크우드": 2, "체리우드": 2, "컬러": 1 },
+      tone_cool:    { "메탈": 2, "스톤": 1, "솔리드": 1 },
+      tone_neutral: { "솔리드": 1, "마블": 1, "하이그로시": 1 }
+    };
+
+    const reasonPhrases = {
+      light_high: { "솔리드": "강한 직사광에도 변색이 적은 무광 마감", "스톤": "직사광선 변색에 강한 스톤 패턴", "마블": "강한 채광에도 안정적인 마블 패턴", "컬러": "밝은 채광과 잘 어울리는 컬러 마감" },
+      light_low:  { "하이그로시": "채광이 부족한 공간을 화사하게 밝히는 하이그로시 유광", "메탈": "약한 채광에 포인트를 주는 메탈릭 헤어라인", "컬러": "저채광 공간에 생기를 더하는 컬러" },
+      humidity_high: { "하이그로시": "고습도 환경에 강한 PET 하이그로시 마감", "스톤": "습기에 강한 스톤 패턴 마감", "메탈": "수분에 강한 메탈릭 마감" },
+      humidity_low:  { "패브릭": "건조한 환경에 어울리는 패브릭 텍스처", "우드": "건조한 공간과 잘 맞는 내추럴 우드", "체리우드": "건조한 환경에 안정적인 체리 우드톤" },
+      wall_rough:  { "패브릭": "요철을 자연스럽게 가려주는 두꺼운 패브릭", "우드": "벽면 요철을 커버하는 우드그레인 질감", "오크우드": "요철 커버력이 좋은 오크 우드톤", "체리우드": "요철을 가려주는 두꺼운 체리 우드", "마블": "요철 위에도 자연스러운 마블 패턴" },
+      wall_smooth: { "하이그로시": "평탄한 벽면의 광택을 살리는 하이그로시", "메탈": "매끈한 벽면에 어울리는 메탈릭 마감", "마블": "평탄한 벽에 고급스러움을 더하는 마블 패턴" },
+      tone_warm:    { "우드": "따뜻한 채광과 어울리는 내추럴 우드톤", "오크우드": "웜톤 조명에 잘 맞는 오크 우드톤", "체리우드": "따뜻한 분위기를 더하는 체리 우드톤", "컬러": "웜톤 공간에 포인트를 주는 컬러" },
+      tone_cool:    { "메탈": "차가운 톤과 잘 어울리는 메탈릭 헤어라인", "스톤": "쿨톤 조명에 세련된 스톤 패턴", "솔리드": "쿨톤 공간에 깔끔한 솔리드 마감" },
+      tone_neutral: { "솔리드": "어떤 공간에도 무난하게 어울리는 솔리드 마감", "마블": "뉴트럴톤에 고급스러움을 더하는 마블", "하이그로시": "중립적인 톤에 화사함을 더하는 하이그로시" }
+    };
+
+    function scoreMaterial(material, tags) {
+      let score = 0;
+      const collected = [];
+      [["light", tags.light.level], ["humidity", tags.humidity.level], ["wall", tags.wall.level], ["tone", tags.tone.level]]
+        .forEach(([dim, level]) => {
+          const key = `${dim}_${level}`;
+          const pref = typePreferences[key];
+          const w = pref ? (pref[material.type] || 0) : 0;
+          score += w;
+          if (w > 0) {
+            const phrase = (reasonPhrases[key] || {})[material.type];
+            if (phrase) collected.push({ w, text: phrase });
+          }
+        });
+      collected.sort((a, b) => b.w - a.w);
+      return { score, reasons: collected.map(c => c.text) };
+    }
+
+    function getRecommendations(tags, count = 3) {
+      const scored = materialDB.map(m => {
+        const { score, reasons } = scoreMaterial(m, tags);
+        return { ...m, score, reasons };
+      });
+      scored.sort((a, b) => b.score - a.score || a.price - b.price);
+
+      const picked = [];
+      const usedBrands = new Set();
+      scored.forEach(m => {
+        if (picked.length >= count) return;
+        if (usedBrands.has(m.brand)) return;
+        usedBrands.add(m.brand);
+        picked.push(m);
+      });
+      scored.forEach(m => {
+        if (picked.length >= count) return;
+        if (!picked.find(p => p.id === m.id)) picked.push(m);
+      });
+
+      return picked.map(m => ({
+        ...m,
+        matchPct: Math.max(60, Math.min(98, Math.round(62 + m.score * 4))),
+        reasonText: m.reasons[0] || "공간 조건에 무난하게 어울리는 마감재"
+      }));
+    }
+
+    /* ===================== 컴포넌트 ===================== */
+
+    function Header() {
+      return (
+        <header className="app-header">
+          <h1>
+            <span className="logo-text">스마트</span>
+            <i className="fa-solid fa-gear logo-gear"></i>
+            <span className="logo-text">견적</span>
+          </h1>
+          <p>AI 환경 분석 · 자재 추천 &amp; 실시간 손실 분석기</p>
+        </header>
+      );
+    }
+
+    function HomeScreen({ onStartAI, onStart }) {
+      return (
+        <div className="scroll-content" style={{ paddingBottom: 24 }}>
+          <div className="ai-hero-card">
+            <div className="ai-hero-icon"><i className="fa-solid fa-wand-magic-sparkles"></i></div>
+            <h2>AI로 우리 집에 딱 맞는 벽지·필름 찾기</h2>
+            <p>습도 센서로 정확한 습도를 재고, 사진 한 장으로 채광·벽면 상태를 분석해 어울리는 자재를 추천하고, 손실률·인건비까지 반영한 견적을 바로 계산해 드려요.</p>
+            <button className="ai-hero-button" onClick={onStartAI}>
+              <i className="fa-solid fa-camera"></i> AI 맞춤 자재 추천받기
+            </button>
+          </div>
+
+          <button className="secondary-action-button" onClick={onStart}>
+            <i className="fa-solid fa-calculator"></i> 자재 없이 바로 견적 짜기
+          </button>
+
+          <button className="secondary-action-button" onClick={findNearbyShops}>
+            <i className="fa-solid fa-location-dot"></i> 내 근처 업체 알아보기
+          </button>
+        </div>
+      );
+    }
+
+    function SensorConnectScreen({ onBack, onConnected }) {
+      const [status, setStatus] = useState('idle'); // idle | connecting | connected | error
+      const [deviceName, setDeviceName] = useState('');
+      const [humidity, setHumidity] = useState(null);
+      const [temperature, setTemperature] = useState(null);
+      const [errorMsg, setErrorMsg] = useState('');
+      const [showManual, setShowManual] = useState(false);
+      const [manualValue, setManualValue] = useState('');
+      const [manualError, setManualError] = useState('');
+
+      const handleConnect = async () => {
+        setStatus('connecting');
+        setErrorMsg('');
+        try {
+          const result = await connectHumiditySensor();
+          setDeviceName(result.deviceName);
+          setHumidity(result.humidity);
+          setTemperature(result.temperature);
+          setStatus('connected');
+        } catch (e) {
+          setStatus('error');
+          if (e && e.code === 'UNSUPPORTED') {
+            setErrorMsg('이 기기 · 브라우저는 블루투스 센서 연동을 지원하지 않아요. 직접 입력을 이용해 주세요.');
+          } else if (e && e.name === 'NotFoundError') {
+            setErrorMsg('연결할 습도 센서를 찾지 못했어요. 센서 전원을 확인한 뒤 다시 시도해 주세요.');
+          } else {
+            setErrorMsg('센서 연결에 실패했어요. 다시 시도하거나 직접 입력해 주세요.');
+          }
+        }
+      };
+
+      const handleManualConfirm = () => {
+        const v = parseFloat(manualValue);
+        if (isNaN(v) || v < 0 || v > 100) {
+          setManualError('0 ~ 100 사이의 습도(%) 값을 입력해 주세요.');
+          return;
+        }
+        setManualError('');
+        onConnected({ deviceName: '수동 입력', humidity: v, temperature: null });
+      };
+
+      return (
+        <div className="scroll-content">
+          <button className="secondary-action-button" style={{ alignSelf: 'flex-start', padding: '8px 14px' }} onClick={onBack}>
+            <i className="fa-solid fa-arrow-left"></i> 홈으로
+          </button>
+
+          <div>
+            <div className="step-eyebrow">STEP 1</div>
+            <div className="screen-title">습도 센서 연결</div>
+            <div className="screen-sub">공간에 설치한 습도 센서를 블루투스로 연결하면 정확한 실시간 습도 데이터를 받아올 수 있어요.</div>
+          </div>
+
+          {status !== 'connected' && (
+            <div className="rec-card sensor-icon-card">
+              <div className="sensor-icon-circle"><i className="fa-brands fa-bluetooth-b"></i></div>
+              <div className="sensor-status-row">
+                <span className="sensor-status-dot"></span>
+                <span>
+                  {status === 'idle' && '연결된 센서 없음'}
+                  {status === 'connecting' && '센서 검색 중...'}
+                  {status === 'error' && '연결 실패'}
+                </span>
+              </div>
+              <button className="action-button" style={{ marginTop: 4 }} onClick={handleConnect} disabled={status === 'connecting'}>
+                <i className="fa-brands fa-bluetooth-b"></i> {status === 'connecting' ? '검색 중...' : '습도 센서 연결하기'}
+              </button>
+              {errorMsg && <div className="error-text">{errorMsg}</div>}
+              <button className="link-button" onClick={() => setShowManual(v => !v)}>센서 없이 직접 입력하기</button>
+            </div>
+          )}
+
+          {status === 'connected' && (
+            <div className="rec-card sensor-live-card">
+              <div className="sensor-live-icon"><i className="fa-solid fa-droplet"></i></div>
+              <div>
+                <div className="sensor-big-value">
+                  <span className="num">{humidity.toFixed(1)}</span>
+                  <span className="unit">%</span>
+                </div>
+                <div className="sensor-live-sub">
+                  {deviceName}{temperature != null ? ` · ${temperature.toFixed(1)}°C` : ''}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {showManual && status !== 'connected' && (
+            <div className="field-row">
+              <label>습도 직접 입력 (%)</label>
+              <input
+                type="text"
+                inputMode="decimal"
+                placeholder="예: 55"
+                value={manualValue}
+                onChange={(e) => setManualValue(e.target.value)}
+              />
+              {manualError && <div className="error-text">{manualError}</div>}
+              <button className="action-button" style={{ marginTop: 8 }} onClick={handleManualConfirm}>
+                <i className="fa-solid fa-check"></i> 이 값으로 계속하기
+              </button>
+            </div>
+          )}
+
+          {status === 'connected' && (
+            <button
+              className="action-button"
+              onClick={() => onConnected({ deviceName, humidity, temperature })}
+            >
+              <i className="fa-solid fa-camera"></i> 다음 : 공간 사진 촬영
+            </button>
+          )}
+        </div>
+      );
+    }
+
+    function AIUploadScreen({ onBack, onAnalyze }) {
+      const [photoDataUrl, setPhotoDataUrl] = useState(null);
+      const [fileName, setFileName] = useState("");
+      const [fileType, setFileType] = useState("");
+      const [location, setLocation] = useState("");
+      const [error, setError] = useState("");
+      const inputRef = useRef(null);
+
+      const handleFile = async (file) => {
+        setError("");
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+          setError("이미지 파일만 업로드할 수 있어요 (JPG · PNG · HEIC).");
+          return;
+        }
+        if (file.size > 12 * 1024 * 1024) {
+          setError("파일 용량이 너무 커요. 12MB 이하 사진을 사용해 주세요.");
+          return;
+        }
+        try {
+          const dataUrl = await readFileAsDataURL(file);
+          setPhotoDataUrl(dataUrl);
+          setFileName(file.name);
+          setFileType(file.type.split('/')[1]?.toUpperCase() || "IMAGE");
+        } catch (e) {
+          setError("사진을 불러오지 못했어요. 다시 시도해 주세요.");
+        }
+      };
+
+      const onInputChange = (e) => {
+        const file = e.target.files && e.target.files[0];
+        handleFile(file);
+      };
+
+      return (
+        <div className="scroll-content">
+          <button className="secondary-action-button" style={{ alignSelf: 'flex-start', padding: '8px 14px' }} onClick={onBack}>
+            <i className="fa-solid fa-arrow-left"></i> 홈으로
+          </button>
+
+          <div>
+            <div className="step-eyebrow">STEP 2</div>
+            <div className="screen-title">공간 사진 업로드</div>
+            <div className="screen-sub">시공 예정 공간을 촬영하거나 앨범에서 사진을 선택해 주세요. 채광 · 벽면 상태 · 인테리어 톤을 사진에서 직접 분석합니다.</div>
+          </div>
+
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            style={{ display: 'none' }}
+            onChange={onInputChange}
+          />
+
+          <div className="photo-drop" onClick={() => inputRef.current && inputRef.current.click()}>
+            {photoDataUrl ? (
+              <React.Fragment>
+                <img src={photoDataUrl} alt="업로드한 공간 사진" />
+                <span className="photo-badge">{fileType} · {fileName.length > 18 ? fileName.slice(0, 18) + '…' : fileName}</span>
+                <button
+                  className="photo-remove-btn"
+                  onClick={(e) => { e.stopPropagation(); setPhotoDataUrl(null); setFileName(""); setFileType(""); }}
+                >
+                  <i className="fa-solid fa-xmark"></i>
+                </button>
+              </React.Fragment>
+            ) : (
+              <React.Fragment>
+                <div className="drop-icon"><i className="fa-solid fa-camera"></i></div>
+                <div className="drop-label">사진 촬영 / 앨범에서 선택</div>
+                <div className="drop-hint">JPG · PNG · HEIC (최대 12MB)</div>
+              </React.Fragment>
+            )}
+          </div>
+
+          {error && <div className="error-text">{error}</div>}
+
+          <div className="field-row">
+            <label>촬영 위치 (선택)</label>
+            <input
+              type="text"
+              placeholder="예: 거실 서쪽 벽, 안방 벽면"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+            />
+          </div>
+
+          <button
+            className="action-button"
+            disabled={!photoDataUrl}
+            onClick={() => onAnalyze({ photoDataUrl, fileName, fileType, location })}
+          >
+            <i className="fa-solid fa-wand-magic-sparkles"></i> AI 분석 시작
+          </button>
+        </div>
+      );
+    }
+
+    function AIAnalyzingScreen({ photo, onDone, onError }) {
+      const [stepIndex, setStepIndex] = useState(0);
+      const steps = ["채광 · 밝기 분석", "색 온도 · 톤 분석", "벽면 요철 감지"];
+
+      useEffect(() => {
+        let cancelled = false;
+        const stepTimer = setInterval(() => {
+          setStepIndex(prev => (prev < steps.length - 1 ? prev + 1 : prev));
+        }, 420);
+
+        (async () => {
+          try {
+            const metrics = await analyzeImageDataUrl(photo.photoDataUrl);
+            const tags = deriveEnvironmentTags(metrics);
+            const elapsed = Date.now();
+            // 최소 로딩 시간을 두어 분석 과정을 자연스럽게 보여줍니다.
+            await new Promise(res => setTimeout(res, 900));
+            if (!cancelled) onDone({ metrics, tags });
+          } catch (e) {
+            if (!cancelled) onError(e);
+          }
+        })();
+
+        return () => { cancelled = true; clearInterval(stepTimer); };
+      }, [photo]);
+
+      return (
+        <div className="scroll-content">
+          <div className="analyzing-wrap">
+            <div className="spinner"></div>
+            <div className="analyzing-title">AI가 사진을 분석하고 있어요</div>
+            <div className="analyzing-sub">컴퓨터 비전으로 공간의 채광 · 벽면 상태 · 인테리어 톤을 자동으로 인식하는 중입니다.</div>
+            <div className="analyzing-steps">
+              {steps.map((s, i) => (
+                <div key={s} className={`analyzing-step${i <= stepIndex ? ' done' : ''}`}>
+                  <i className={`fa-solid ${i <= stepIndex ? 'fa-circle-check' : 'fa-circle'}`}></i>
+                  <span>{s}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function EnvCard({ title, tag }) {
+      const hex = TAG_COLORS[tag.color] || TAG_COLORS.blue;
+      return (
+        <div className="env-card">
+          <div className="env-dot-wrap" style={{ background: hex + '22' }}>
+            <span className="env-dot" style={{ background: hex }}></span>
+          </div>
+          <div className="env-title">{title}</div>
+          <div className="env-sub">{tag.label}</div>
+        </div>
+      );
+    }
+
+    function AIResultScreen({ photo, tags, onBack, onNext }) {
+      return (
+        <div className="scroll-content">
+          <button className="secondary-action-button" style={{ alignSelf: 'flex-start', padding: '8px 14px' }} onClick={onBack}>
+            <i className="fa-solid fa-arrow-left"></i> 다시 촬영하기
+          </button>
+
+          <div>
+            <div className="step-eyebrow">STEP 3</div>
+            <div className="screen-title">종합 환경 분석 결과</div>
+            <div className="screen-sub">센서로 측정한 습도와 사진 픽셀 분석으로 인식한 채광 · 벽면 상태 · 톤, 4가지 환경 요소를 종합했어요.</div>
+          </div>
+
+          <div className="env-photo-strip">
+            <img src={photo.photoDataUrl} alt="분석한 공간 사진" />
+            <div>
+              <div className="name">{photo.location || "공간 사진"}</div>
+              <div className="sub">{photo.fileName}</div>
+            </div>
+          </div>
+
+          <div className="env-grid">
+            <EnvCard title="채광 조건" tag={tags.light} />
+            <EnvCard title="습도 수준" tag={tags.humidity} />
+            <EnvCard title="벽면 상태" tag={tags.wall} />
+            <EnvCard title="인테리어 톤" tag={tags.tone} />
+          </div>
+
+          <button className="action-button" onClick={onNext}>
+            <i className="fa-solid fa-layer-group"></i> AI 맞춤 자재 추천 보기
+          </button>
+        </div>
+      );
+    }
+
+    function RecommendCard({ item, chosen, onSelect }) {
+      const hex = typeSwatchColor[item.type] || "#E7ECF5";
+      return (
+        <div className="rec-card">
+          <div className="rec-swatch" style={{ background: hex }}>
+            <span className="rec-badge">{item.matchPct}% 매칭</span>
+          </div>
+          <div>
+            <div className="rec-brand">{item.brand}</div>
+            <div className="rec-name">{item.name}</div>
+          </div>
+          <div className="rec-reason">{item.reasonText}</div>
+          <div className="rec-meta">
+            <span>폭 {item.width}cm</span>
+            <span>{item.price.toLocaleString()}원 / 50m롤</span>
+          </div>
+          <button className={`rec-select-btn${chosen ? ' chosen' : ''}`} onClick={() => onSelect(item)}>
+            {chosen ? <React.Fragment><i className="fa-solid fa-check"></i> 이 자재로 선택됨</React.Fragment> : "이 자재로 견적 시작하기"}
+          </button>
+        </div>
+      );
+    }
+
+    function AIRecommendScreen({ tags, onBack, onChoose }) {
+      const recommendations = useMemo(() => getRecommendations(tags, 3), [tags]);
+      const [chosenId, setChosenId] = useState(null);
+
+      const handleSelect = (item) => {
+        setChosenId(item.id);
+        onChoose(item);
+      };
+
+      return (
+        <div className="scroll-content">
+          <button className="secondary-action-button" style={{ alignSelf: 'flex-start', padding: '8px 14px' }} onClick={onBack}>
+            <i className="fa-solid fa-arrow-left"></i> 분석 결과로
+          </button>
+
+          <div>
+            <div className="step-eyebrow">STEP 4</div>
+            <div className="screen-title">AI 맞춤 자재 추천</div>
+            <div className="screen-sub">브랜드 10종 × 소재 10종, 100개 자재 DB에서 공간 조건에 가장 잘 맞는 3가지를 골랐어요.</div>
+          </div>
+
+          <div className="rec-list">
+            {recommendations.map(item => (
+              <RecommendCard key={item.id} item={item} chosen={chosenId === item.id} onSelect={handleSelect} />
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    function MaterialSearchPanel({ onSelect }) {
+      const [open, setOpen] = useState(false);
+      const [query, setQuery] = useState('');
+      const inputRef = useRef(null);
+
+      const results = useMemo(() => {
+        const q = query.trim().toLowerCase();
+        if (!q) return [];
+        return materialDB.filter(m =>
+          m.brand.toLowerCase().includes(q) ||
+          m.type.toLowerCase().includes(q) ||
+          m.name.toLowerCase().includes(q)
+        ).slice(0, 30);
+      }, [query]);
+
+      const toggle = () => {
+        const next = !open;
+        setOpen(next);
+        if (next) {
+          setTimeout(() => inputRef.current && inputRef.current.focus(), 0);
+        }
+      };
+
+      const handleSelect = (m) => {
+        onSelect(m);
+        setOpen(false);
+        setQuery('');
+      };
+
+      return (
+        <React.Fragment>
+          <div className="ios-list" style={{ marginBottom: -6 }}>
+            <div className="ios-row" style={{ cursor: 'pointer' }} onClick={toggle}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <i className="fa-solid fa-magnifying-glass" style={{ color: 'var(--ios-blue)' }}></i> 자재 찾기
+              </label>
+              <i
+                className="fa-solid fa-chevron-down"
+                style={{ color: 'var(--ios-gray-text)', transition: 'transform 0.15s ease', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}
+              ></i>
+            </div>
+          </div>
+
+          {open && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div className="ios-input-wrapper" style={{ width: '100%' }}>
+                <input
+                  ref={inputRef}
+                  type="text"
+                  placeholder="브랜드 또는 소재로 검색 (예: 한샘, 우드)"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  style={{ textAlign: 'left', fontWeight: 500 }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 260, overflowY: 'auto' }}>
+                {query.trim() === '' && (
+                  <p style={{ fontSize: 12, color: 'var(--ios-gray-text)', padding: '8px 2px' }}>
+                    브랜드명(예: 한샘) 또는 소재명(예: 우드)을 입력해 보세요.
+                  </p>
+                )}
+                {query.trim() !== '' && results.length === 0 && (
+                  <p style={{ fontSize: 12, color: 'var(--ios-gray-text)', padding: '8px 2px' }}>검색 결과가 없습니다.</p>
+                )}
+                {query.trim() !== '' && results.length > 0 && (
+                  <React.Fragment>
+                    <p style={{ fontSize: 12, color: 'var(--ios-gray-text)', marginBottom: 2 }}>{results.length}건 검색됨</p>
+                    {results.map(m => (
+                      <div
+                        key={m.id}
+                        className="added-item"
+                        style={{ cursor: 'pointer', marginBottom: 0 }}
+                        onClick={() => handleSelect(m)}
+                      >
+                        <div className="item-info">
+                          <span className="title">{m.brand} · {m.name}</span>
+                          <span className="spec">{m.type} · 폭 {m.width}cm · {m.price.toLocaleString()}원/50m롤</span>
+                        </div>
+                        <i className="fa-solid fa-chevron-right" style={{ color: 'var(--ios-gray-text)', fontSize: 13 }}></i>
+                      </div>
+                    ))}
+                  </React.Fragment>
+                )}
+              </div>
+            </div>
+          )}
+        </React.Fragment>
+      );
+    }
+
+    function FavoriteFilms({ favorites, onPick, onDelete }) {
+      if (favorites.length === 0) {
+        return (
+          <div className="preset-chips">
+            <span style={{ fontSize: 12, color: 'var(--ios-gray-text)', padding: '8px 4px' }}>즐겨찾는 시트지를 등록해 보세요.</span>
+          </div>
+        );
+      }
+      return (
+        <div className="preset-chips">
+          {favorites.map((film, index) => (
+            <div
+              key={`${film.name}-${index}`}
+              className="chip favorite-chip"
+              onClick={() => onPick(film)}
+            >
+              <i className="fa-solid fa-star" style={{ fontSize: 10 }}></i>
+              <span>{film.name} ({film.width}cm)</span>
+              <button
+                className="delete-fav-btn"
+                onClick={(e) => { e.stopPropagation(); onDelete(index); }}
+              >
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    function CalculatorScreen({ onBack, initialFilm, aiApplied }) {
+      const [film, setFilm] = useState(() => initialFilm || { name: '무광 솔리드 화이트', width: '122', price: '45000', cutMargin: '10' });
+      const [showAiBanner, setShowAiBanner] = useState(!!aiApplied);
+
+      const [favorites, setFavorites] = useState(() => {
+        try {
+          const saved = localStorage.getItem('fav_films');
+          return saved ? JSON.parse(saved) : defaultFavorites;
+        } catch (e) {
+          return defaultFavorites;
+        }
+      });
+
+      useEffect(() => {
+        localStorage.setItem('fav_films', JSON.stringify(favorites));
+      }, [favorites]);
+
+      const [currentTarget, setCurrentTarget] = useState('door');
+      const [inputWidth, setInputWidth] = useState('');
+      const [inputHeight, setInputHeight] = useState('');
+      const [inputQty, setInputQty] = useState('1');
+      const [items, setItems] = useState([]);
+
+      const totals = useMemo(() => calcTotals(items, film), [items, film]);
+
+      const updateFilm = (field, value) => setFilm(prev => ({ ...prev, [field]: value }));
+
+      const handleSelectMaterial = (m) => {
+        setFilm(prev => ({ ...prev, name: `${m.brand} ${m.name}`, width: String(m.width), price: String(m.price) }));
+      };
+
+      const pickFavorite = (fav) => {
+        setFilm(prev => ({ ...prev, name: fav.name, width: String(fav.width), price: String(fav.price) }));
+      };
+
+      const deleteFavorite = (index) => {
+        setFavorites(prev => prev.filter((_, i) => i !== index));
+      };
+
+      const addFavorite = () => {
+        const name = film.name.trim();
+        const width = parseFloat(film.width);
+        const price = parseFloat(film.price);
+
+        if (!name || isNaN(width) || width <= 0 || isNaN(price) || price < 0) {
+          alert('올바른 자재 정보(자재명, 가로폭, 가격)를 먼저 입력해주세요.');
+          return;
+        }
+        const exists = favorites.some(f => f.name === name && f.width === width && f.price === price);
+        if (exists) {
+          alert('이미 동일한 사양의 시트지가 즐겨찾기에 있습니다.');
+          return;
+        }
+        setFavorites(prev => [...prev, { name, width, price }]);
+      };
+
+      const addItem = () => {
+        const w = parseFloat(inputWidth);
+        const h = parseFloat(inputHeight);
+        const qty = parseInt(inputQty, 10) || 1;
+
+        if (!w || !h || qty < 1) {
+          alert('치수와 수량을 정확하게 입력해 주세요.');
+          return;
+        }
+
+        setItems(prev => [...prev, {
+          id: Date.now(),
+          targetKey: currentTarget,
+          targetName: targetConfig[currentTarget].name,
+          width: w,
+          height: h,
+          qty
+        }]);
+
+        setInputWidth('');
+        setInputHeight('');
+        setInputQty('1');
+      };
+
+      const deleteItem = (id) => {
+        setItems(prev => prev.filter(item => item.id !== id));
+      };
+
+      const pickPreset = (w, h) => {
+        setInputWidth(String(w));
+        setInputHeight(String(h));
+      };
+
+      return (
+        <React.Fragment>
+          <div className="scroll-content">
+
+            <button
+              className="secondary-action-button"
+              style={{ alignSelf: 'flex-start', padding: '8px 14px' }}
+              onClick={onBack}
+            >
+              <i className="fa-solid fa-arrow-left"></i> 홈으로
+            </button>
+
+            {showAiBanner && (
+              <div className="ai-banner">
+                <i className="fa-solid fa-circle-check"></i>
+                <span>AI가 추천한 자재가 자동으로 적용되었어요. 아래에서 치수를 입력하면 바로 견적이 계산됩니다.</span>
+              </div>
+            )}
+
+            <section className="ios-group-card">
+              <h2 className="card-title">01. 자재 정보 입력</h2>
+
+              <MaterialSearchPanel onSelect={handleSelectMaterial} />
+
+              <FavoriteFilms favorites={favorites} onPick={pickFavorite} onDelete={deleteFavorite} />
+
+              <div className="ios-list">
+                <div className="ios-row">
+                  <label>자재명 (메모용)</label>
+                  <div className="ios-input-wrapper" style={{ width: 180 }}>
+                    <input
+                      type="text"
+                      value={film.name}
+                      onChange={(e) => updateFilm('name', e.target.value)}
+                      style={{ textAlign: 'right', fontWeight: 500 }}
+                    />
+                  </div>
+                </div>
+                <div className="ios-row">
+                  <label>원단 가로폭</label>
+                  <div className="ios-input-wrapper">
+                    <input type="number" value={film.width} onChange={(e) => updateFilm('width', e.target.value)} />
+                    <span className="unit">cm</span>
+                  </div>
+                </div>
+                <div className="ios-row">
+                  <label>50m 1롤 가격</label>
+                  <div className="ios-input-wrapper">
+                    <input type="number" value={film.price} onChange={(e) => updateFilm('price', e.target.value)} />
+                    <span className="unit">원</span>
+                  </div>
+                </div>
+                <div className="ios-row">
+                  <label>재단 마감 여유</label>
+                  <div className="ios-input-wrapper">
+                    <input type="number" value={film.cutMargin} onChange={(e) => updateFilm('cutMargin', e.target.value)} />
+                    <span className="unit">cm</span>
+                  </div>
+                </div>
+              </div>
+
+              <button className="secondary-action-button" onClick={addFavorite}>
+                <i className="fa-solid fa-star"></i> 현재 자재 즐겨찾기에 등록
+              </button>
+            </section>
+
+            <section className="ios-group-card">
+              <h2 className="card-title">02. 시공처 및 규격 입력</h2>
+
+              <div className="target-grid">
+                {targetList.map(t => (
+                  <button
+                    key={t.key}
+                    className={`target-btn${currentTarget === t.key ? ' active' : ''}`}
+                    onClick={() => setCurrentTarget(t.key)}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="preset-chips">
+                {targetConfig[currentTarget].presets.map(preset => (
+                  <button key={preset.name} className="chip" onClick={() => pickPreset(preset.w, preset.h)}>
+                    {preset.name}
+                  </button>
+                ))}
+              </div>
+
+              <div className="ios-list">
+                <div className="ios-row">
+                  <label>{targetConfig[currentTarget].wLabel}</label>
+                  <div className="ios-input-wrapper">
+                    <input type="number" placeholder="0" value={inputWidth} onChange={(e) => setInputWidth(e.target.value)} />
+                    <span className="unit">cm</span>
+                  </div>
+                </div>
+                <div className="ios-row">
+                  <label>{targetConfig[currentTarget].hLabel}</label>
+                  <div className="ios-input-wrapper">
+                    <input type="number" placeholder="0" value={inputHeight} onChange={(e) => setInputHeight(e.target.value)} />
+                    <span className="unit">cm</span>
+                  </div>
+                </div>
+                <div className="ios-row">
+                  <label>시공 수량</label>
+                  <div className="ios-input-wrapper">
+                    <input type="number" value={inputQty} onChange={(e) => setInputQty(e.target.value)} />
+                    <span className="unit">개</span>
+                  </div>
+                </div>
+              </div>
+
+              <button className="action-button" onClick={addItem}>
+                <i className="fa-solid fa-plus"></i> 시공 부위 추가하기
+              </button>
+            </section>
+
+            <section className="ios-group-card">
+              <h2 className="card-title">03. 등록 현황</h2>
+              {items.length === 0 ? (
+                <p style={{ textAlign: 'center', color: 'var(--ios-gray-text)', fontSize: 14, padding: '20px 0' }}>
+                  추가된 시공 부위가 없습니다.
+                </p>
+              ) : (
+                <div>
+                  {items.map(item => (
+                    <div className="added-item" key={item.id}>
+                      <div className="item-info">
+                        <span className="title">{item.targetName} × {item.qty}개</span>
+                        <span className="spec">{item.width}cm × {item.height}cm</span>
+                      </div>
+                      <button className="delete-btn" onClick={() => deleteItem(item.id)}>
+                        <i className="fa-solid fa-circle-minus"></i>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
+          </div>
+
+          <div className="ios-bottom-bar">
+            <div className="dashboard-grid">
+              <div className="dashboard-box">
+                <span className="label">순 시공 면적</span>
+                <span className="value">{totals.netArea.toFixed(2)} ㎡</span>
+              </div>
+              <div className="dashboard-box">
+                <span className="label">필요 자재 길이</span>
+                <span className="value">{totals.neededLength.toFixed(1)} m</span>
+              </div>
+              <div className="dashboard-box">
+                <span className="label">자재 폐기 손실률</span>
+                <span className="value danger">{totals.lossRate.toFixed(1)} %</span>
+              </div>
+              <div className="dashboard-box">
+                <span className="label">낭비되는 손실비용</span>
+                <span className="value danger">{Math.round(totals.lossCost).toLocaleString()} 원</span>
+              </div>
+              <div className="dashboard-box">
+                <span className="label">투입 인력 (총 품셈)</span>
+                <span className="value prime">{totals.manpower.toFixed(2)} 품</span>
+              </div>
+              <div className="dashboard-box">
+                <span className="label">표준 DB 인건비</span>
+                <span className="value prime">{Math.round(totals.laborCost).toLocaleString()} 원</span>
+              </div>
+            </div>
+
+            <div className="total-divider"></div>
+
+            <div className="total-row">
+              <span className="total-title">최종 종합 견적가</span>
+              <span className="total-price">{Math.round(totals.totalPrice).toLocaleString()} 원</span>
+            </div>
+          </div>
+        </React.Fragment>
+      );
+    }
+
+    function App() {
+      const [screen, setScreen] = useState('home');
+      const [sensorData, setSensorData] = useState(null);
+      const [photo, setPhoto] = useState(null);
+      const [analysis, setAnalysis] = useState(null);
+      const [chosenMaterial, setChosenMaterial] = useState(null);
+      const [analyzeError, setAnalyzeError] = useState("");
+
+      const goHome = () => {
+        setScreen('home');
+        setSensorData(null);
+        setPhoto(null);
+        setAnalysis(null);
+        setAnalyzeError("");
+      };
+
+      const handleSensorConnected = (data) => {
+        setSensorData(data);
+        setScreen('aiUpload');
+      };
+
+      const handleAnalyze = (photoInfo) => {
+        setPhoto(photoInfo);
+        setAnalyzeError("");
+        setScreen('aiAnalyzing');
+      };
+
+      const handleAnalyzeDone = ({ metrics, tags }) => {
+        const humidityTag = humidityTagFromValue(sensorData ? sensorData.humidity : 50);
+        setAnalysis({ metrics, tags: { ...tags, humidity: humidityTag } });
+        setScreen('aiResult');
+      };
+
+      const handleAnalyzeError = () => {
+        setAnalyzeError("사진을 분석하지 못했어요. 다른 사진으로 다시 시도해 주세요.");
+        setScreen('aiUpload');
+      };
+
+      const handleChooseMaterial = (item) => {
+        setChosenMaterial({ name: `${item.brand} ${item.name}`, width: String(item.width), price: String(item.price), cutMargin: '10' });
+      };
+
+      const goToCalculatorWithChoice = () => {
+        setScreen('calculator');
+      };
+
+      return (
+        <div className="phone-viewport">
+          <Header />
+          {screen === 'home' && (
+            <HomeScreen onStartAI={() => setScreen('sensorConnect')} onStart={() => { setChosenMaterial(null); setScreen('calculator'); }} />
+          )}
+          {screen === 'sensorConnect' && (
+            <SensorConnectScreen onBack={goHome} onConnected={handleSensorConnected} />
+          )}
+          {screen === 'aiUpload' && (
+            <React.Fragment>
+              {analyzeError && (
+                <div className="scroll-content" style={{ paddingBottom: 0 }}>
+                  <div className="error-text">{analyzeError}</div>
+                </div>
+              )}
+              <AIUploadScreen onBack={() => setScreen('sensorConnect')} onAnalyze={handleAnalyze} />
+            </React.Fragment>
+          )}
+          {screen === 'aiAnalyzing' && photo && (
+            <AIAnalyzingScreen photo={photo} onDone={handleAnalyzeDone} onError={handleAnalyzeError} />
+          )}
+          {screen === 'aiResult' && photo && analysis && (
+            <AIResultScreen
+              photo={photo}
+              tags={analysis.tags}
+              onBack={() => setScreen('aiUpload')}
+              onNext={() => setScreen('aiRecommend')}
+            />
+          )}
+          {screen === 'aiRecommend' && analysis && (
+            <AIRecommendScreen
+              tags={analysis.tags}
+              onBack={() => setScreen('aiResult')}
+              onChoose={handleChooseMaterial}
+            />
+          )}
+          {screen === 'aiRecommend' && chosenMaterial && (
+            <div style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 430, padding: '14px 16px calc(14px + env(safe-area-inset-bottom)) 16px', background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(20px)', borderTop: '1px solid var(--border-color)' }}>
+              <button className="action-button" onClick={goToCalculatorWithChoice}>
+                <i className="fa-solid fa-calculator"></i> 선택한 자재로 견적 계산하기
+              </button>
+            </div>
+          )}
+          {screen === 'calculator' && (
+            <CalculatorScreen onBack={goHome} initialFilm={chosenMaterial} aiApplied={!!chosenMaterial} />
+          )}
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
