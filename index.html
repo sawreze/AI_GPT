@@ -46,6 +46,7 @@
       justify-content: center;
       min-height: 100vh;
       padding-bottom: env(safe-area-inset-bottom);
+      overflow-x: hidden;
     }
 
     .phone-viewport {
@@ -55,6 +56,41 @@
       display: flex;
       flex-direction: column;
       position: relative;
+    }
+
+    /* ===================== 스와이프 뒤로가기 ===================== */
+
+    .swipe-stage {
+      position: relative;
+      width: 100%;
+    }
+
+    .swipe-layer-current {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      background-color: var(--ios-bg);
+    }
+
+    .swipe-layer-current.dragging {
+      box-shadow: -8px 0 24px rgba(0, 0, 0, 0.12);
+    }
+
+    .swipe-layer-prev {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      min-height: 100%;
+      background-color: var(--ios-bg);
+      z-index: 0;
+    }
+
+    .swipe-dim {
+      position: absolute;
+      inset: 0;
+      background: #000;
+      pointer-events: none;
     }
 
     .app-header {
@@ -86,6 +122,17 @@
     .app-header h1 .logo-gear {
       color: #8FB4FA;
       font-size: 26px;
+    }
+
+    .app-header h1.logo-clickable {
+      cursor: pointer;
+      width: fit-content;
+      margin: 0 auto;
+      transition: opacity 0.15s ease;
+    }
+
+    .app-header h1.logo-clickable:active {
+      opacity: 0.6;
     }
 
     .app-header p {
@@ -1369,10 +1416,14 @@
 
     /* ===================== 컴포넌트 ===================== */
 
-    function Header() {
+    function Header({ isHome, onLogoClick }) {
       return (
         <header className="app-header">
-          <h1>
+          <h1
+            className={isHome ? '' : 'logo-clickable'}
+            onClick={isHome ? undefined : onLogoClick}
+            role={isHome ? undefined : 'button'}
+          >
             <span className="logo-text">스마트</span>
             <i className="fa-solid fa-gear logo-gear"></i>
             <span className="logo-text">견적</span>
@@ -2158,6 +2209,108 @@
       );
     }
 
+    /* ===================== 엣지 스와이프 뒤로가기 =====================
+       화면 맨 왼쪽 가장자리(~24px)에서 오른쪽으로 드래그하면
+       아이폰 네이티브 백 제스처처럼 현재 화면이 오른쪽으로 밀려나면서
+       이전 화면이 뒤에서 따라 나오고, 일정 거리 이상 놓으면 이전 화면으로
+       전환됩니다. (홈 화면에는 이전 화면이 없으므로 동작하지 않습니다.)
+    ==================================================================== */
+
+    const EDGE_ZONE_PX = 24;
+    const COMMIT_THRESHOLD = 0.3;
+    const SETTLE_MS = 260;
+
+    function SwipeBackStage({ screen, backTarget, onCommitBack, renderScreen }) {
+      const stageRef = useRef(null);
+      const gestureRef = useRef({ tracking: false, decided: false, horizontal: false, startX: 0, startY: 0, width: 0 });
+      const [swipe, setSwipe] = useState({ x: 0, phase: 'idle' }); // phase: idle | dragging | animating
+
+      const handleTouchStart = (e) => {
+        if (!backTarget || swipe.phase !== 'idle') return;
+        const t = e.touches[0];
+        if (t.clientX > EDGE_ZONE_PX) return;
+        const width = stageRef.current ? stageRef.current.clientWidth : window.innerWidth;
+        gestureRef.current = { tracking: true, decided: false, horizontal: false, startX: t.clientX, startY: t.clientY, width };
+      };
+
+      const handleTouchMove = (e) => {
+        const g = gestureRef.current;
+        if (!g.tracking) return;
+        const t = e.touches[0];
+        const dx = t.clientX - g.startX;
+        const dy = t.clientY - g.startY;
+        if (!g.decided) {
+          if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+          g.decided = true;
+          g.horizontal = dx > 0 && Math.abs(dx) > Math.abs(dy);
+          if (!g.horizontal) { g.tracking = false; return; }
+        }
+        if (!g.horizontal) return;
+        e.preventDefault();
+        const clamped = Math.max(0, Math.min(dx, g.width));
+        setSwipe({ x: clamped, phase: 'dragging' });
+      };
+
+      const finishGesture = () => {
+        const g = gestureRef.current;
+        if (!g.tracking || !g.horizontal) {
+          g.tracking = false;
+          return;
+        }
+        g.tracking = false;
+        const width = g.width || 1;
+        setSwipe((prev) => {
+          const progress = prev.x / width;
+          if (progress > COMMIT_THRESHOLD) {
+            window.setTimeout(() => {
+              onCommitBack();
+              setSwipe({ x: 0, phase: 'idle' });
+            }, SETTLE_MS);
+            return { x: width, phase: 'animating' };
+          }
+          window.setTimeout(() => {
+            setSwipe({ x: 0, phase: 'idle' });
+          }, SETTLE_MS);
+          return { x: 0, phase: 'animating' };
+        });
+      };
+
+      const width = gestureRef.current.width || (stageRef.current ? stageRef.current.clientWidth : window.innerWidth);
+      const progress = width ? Math.min(1, swipe.x / width) : 0;
+      const isIdle = swipe.phase === 'idle';
+
+      const currentStyle = isIdle ? undefined : {
+        transform: `translateX(${swipe.x}px)`,
+        transition: swipe.phase === 'animating' ? `transform ${SETTLE_MS}ms cubic-bezier(0.22,1,0.36,1)` : 'none'
+      };
+
+      const prevStyle = {
+        transform: `translateX(${(progress - 1) * 28}%)`,
+        transition: swipe.phase === 'animating' ? `transform ${SETTLE_MS}ms cubic-bezier(0.22,1,0.36,1)` : 'none'
+      };
+
+      return (
+        <div
+          className="swipe-stage"
+          ref={stageRef}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={finishGesture}
+          onTouchCancel={finishGesture}
+        >
+          {!isIdle && (
+            <div className="swipe-layer-prev" style={prevStyle}>
+              {renderScreen(backTarget)}
+              <div className="swipe-dim" style={{ opacity: (1 - progress) * 0.18 }}></div>
+            </div>
+          )}
+          <div className={`swipe-layer-current${swipe.phase === 'dragging' ? ' dragging' : ''}`} style={currentStyle}>
+            {renderScreen(screen)}
+          </div>
+        </div>
+      );
+    }
+
     function App() {
       const [screen, setScreen] = useState('home');
       const [sensorData, setSensorData] = useState(null);
@@ -2204,53 +2357,102 @@
         setScreen('calculator');
       };
 
+      // 각 화면의 "뒤로가기" 대상 화면. 홈 화면과 분석 중 화면은 대상이 없어
+      // 뒤로가기 버튼도, 엣지 스와이프도 동작하지 않습니다.
+      const getBackTarget = (s) => {
+        switch (s) {
+          case 'sensorConnect': return 'home';
+          case 'aiUpload': return 'sensorConnect';
+          case 'aiResult': return 'aiUpload';
+          case 'aiRecommend': return 'aiResult';
+          case 'calculator': return 'home';
+          default: return null;
+        }
+      };
+
+      const goToScreen = (target) => {
+        if (target === 'home') {
+          goHome();
+        } else {
+          setScreen(target);
+        }
+      };
+
+      const handleBack = () => {
+        const target = getBackTarget(screen);
+        if (target) goToScreen(target);
+      };
+
+      // 스와이프 중에는 현재 화면과 "뒤로가기 대상" 화면을 동시에 렌더링해야 하므로
+      // 화면 이름을 받아 해당 화면 JSX를 반환하는 함수로 분리합니다.
+      const renderScreenContent = (name) => {
+        switch (name) {
+          case 'home':
+            return (
+              <HomeScreen
+                onStartAI={() => setScreen('sensorConnect')}
+                onStart={() => { setChosenMaterial(null); setScreen('calculator'); }}
+              />
+            );
+          case 'sensorConnect':
+            return <SensorConnectScreen onBack={handleBack} onConnected={handleSensorConnected} />;
+          case 'aiUpload':
+            return (
+              <React.Fragment>
+                {analyzeError && (
+                  <div className="scroll-content" style={{ paddingBottom: 0 }}>
+                    <div className="error-text">{analyzeError}</div>
+                  </div>
+                )}
+                <AIUploadScreen onBack={handleBack} onAnalyze={handleAnalyze} />
+              </React.Fragment>
+            );
+          case 'aiAnalyzing':
+            return photo ? (
+              <AIAnalyzingScreen photo={photo} onDone={handleAnalyzeDone} onError={handleAnalyzeError} />
+            ) : null;
+          case 'aiResult':
+            return (photo && analysis) ? (
+              <AIResultScreen
+                photo={photo}
+                tags={analysis.tags}
+                onBack={handleBack}
+                onNext={() => setScreen('aiRecommend')}
+              />
+            ) : null;
+          case 'aiRecommend':
+            return analysis ? (
+              <React.Fragment>
+                <AIRecommendScreen
+                  tags={analysis.tags}
+                  onBack={handleBack}
+                  onChoose={handleChooseMaterial}
+                />
+                {chosenMaterial && (
+                  <div style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 430, padding: '14px 16px calc(14px + env(safe-area-inset-bottom)) 16px', background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(20px)', borderTop: '1px solid var(--border-color)' }}>
+                    <button className="action-button" onClick={goToCalculatorWithChoice}>
+                      <i className="fa-solid fa-calculator"></i> 선택한 자재로 견적 계산하기
+                    </button>
+                  </div>
+                )}
+              </React.Fragment>
+            ) : null;
+          case 'calculator':
+            return <CalculatorScreen onBack={handleBack} initialFilm={chosenMaterial} aiApplied={!!chosenMaterial} />;
+          default:
+            return null;
+        }
+      };
+
       return (
         <div className="phone-viewport">
-          <Header />
-          {screen === 'home' && (
-            <HomeScreen onStartAI={() => setScreen('sensorConnect')} onStart={() => { setChosenMaterial(null); setScreen('calculator'); }} />
-          )}
-          {screen === 'sensorConnect' && (
-            <SensorConnectScreen onBack={goHome} onConnected={handleSensorConnected} />
-          )}
-          {screen === 'aiUpload' && (
-            <React.Fragment>
-              {analyzeError && (
-                <div className="scroll-content" style={{ paddingBottom: 0 }}>
-                  <div className="error-text">{analyzeError}</div>
-                </div>
-              )}
-              <AIUploadScreen onBack={() => setScreen('sensorConnect')} onAnalyze={handleAnalyze} />
-            </React.Fragment>
-          )}
-          {screen === 'aiAnalyzing' && photo && (
-            <AIAnalyzingScreen photo={photo} onDone={handleAnalyzeDone} onError={handleAnalyzeError} />
-          )}
-          {screen === 'aiResult' && photo && analysis && (
-            <AIResultScreen
-              photo={photo}
-              tags={analysis.tags}
-              onBack={() => setScreen('aiUpload')}
-              onNext={() => setScreen('aiRecommend')}
-            />
-          )}
-          {screen === 'aiRecommend' && analysis && (
-            <AIRecommendScreen
-              tags={analysis.tags}
-              onBack={() => setScreen('aiResult')}
-              onChoose={handleChooseMaterial}
-            />
-          )}
-          {screen === 'aiRecommend' && chosenMaterial && (
-            <div style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 430, padding: '14px 16px calc(14px + env(safe-area-inset-bottom)) 16px', background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(20px)', borderTop: '1px solid var(--border-color)' }}>
-              <button className="action-button" onClick={goToCalculatorWithChoice}>
-                <i className="fa-solid fa-calculator"></i> 선택한 자재로 견적 계산하기
-              </button>
-            </div>
-          )}
-          {screen === 'calculator' && (
-            <CalculatorScreen onBack={goHome} initialFilm={chosenMaterial} aiApplied={!!chosenMaterial} />
-          )}
+          <Header isHome={screen === 'home'} onLogoClick={goHome} />
+          <SwipeBackStage
+            screen={screen}
+            backTarget={getBackTarget(screen)}
+            onCommitBack={handleBack}
+            renderScreen={renderScreenContent}
+          />
         </div>
       );
     }
