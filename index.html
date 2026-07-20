@@ -2320,6 +2320,13 @@
           dim.style.opacity = toCommit ? 0 : 0.18;
         }
         window.setTimeout(() => {
+          // 애니메이션이 끝나면 현재 레이어에 남은 인라인 transform 을 반드시 초기화한다.
+          // (초기화하지 않으면 화면 전체가 오른쪽으로 밀린 채로 굳어버림)
+          const curEl = currentLayerRef.current;
+          if (curEl) {
+            curEl.style.transition = 'none';
+            curEl.style.transform = '';
+          }
           if (toCommit) onCommitBack();
           setActive(false);
         }, SETTLE_MS);
