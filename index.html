@@ -72,8 +72,9 @@
       background-color: var(--ios-bg);
     }
 
-    .swipe-layer-current.dragging {
+    .swipe-stage.active .swipe-layer-current {
       box-shadow: -8px 0 24px rgba(0, 0, 0, 0.12);
+      will-change: transform;
     }
 
     .swipe-layer-prev {
@@ -84,6 +85,7 @@
       min-height: 100%;
       background-color: var(--ios-bg);
       z-index: 0;
+      will-change: transform;
     }
 
     .swipe-dim {
@@ -91,6 +93,7 @@
       inset: 0;
       background: #000;
       pointer-events: none;
+      will-change: opacity;
     }
 
     .app-header {
@@ -958,6 +961,30 @@
       padding: 4px;
       align-self: center;
     }
+
+    .home-footer {
+      margin-top: 20px;
+      padding: 16px 12px calc(20px + env(safe-area-inset-bottom)) 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      text-align: center;
+    }
+
+    .home-footer-line {
+      font-size: 12px;
+      font-weight: 600;
+      color: #4A4A4A;
+      letter-spacing: -0.2px;
+    }
+
+    .home-footer-copy {
+      font-size: 11.5px;
+      font-weight: 500;
+      color: #555555;
+      letter-spacing: -0.1px;
+    }
   </style>
 </head>
 <body>
@@ -1452,6 +1479,11 @@
           <button className="secondary-action-button" onClick={findNearbyShops}>
             <i className="fa-solid fa-location-dot"></i> 내 근처 업체 알아보기
           </button>
+
+          <footer className="home-footer">
+            <div className="home-footer-line">현장의 손실을 줄이고, 정직한 견적을 만듭니다.</div>
+            <div className="home-footer-copy">© 2026 임해인 · imhaein019@gmail.com</div>
+          </footer>
         </div>
       );
     }
@@ -1622,7 +1654,6 @@
             ref={inputRef}
             type="file"
             accept="image/*"
-            capture="environment"
             style={{ display: 'none' }}
             onChange={onInputChange}
           />
@@ -2218,19 +2249,78 @@
 
     const EDGE_ZONE_PX = 24;
     const COMMIT_THRESHOLD = 0.3;
-    const SETTLE_MS = 260;
+    const SETTLE_MS = 300;
+    const SWIPE_EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
+    const PREV_SHIFT = 28; // 이전 화면 패럴랙스 이동량(%)
 
     function SwipeBackStage({ screen, backTarget, onCommitBack, renderScreen }) {
       const stageRef = useRef(null);
-      const gestureRef = useRef({ tracking: false, decided: false, horizontal: false, startX: 0, startY: 0, width: 0 });
-      const [swipe, setSwipe] = useState({ x: 0, phase: 'idle' }); // phase: idle | dragging | animating
+      const currentLayerRef = useRef(null);
+      const prevLayerRef = useRef(null);
+      const dimRef = useRef(null);
+      const rafRef = useRef(0);
+      const gestureRef = useRef({ tracking: false, decided: false, horizontal: false, activated: false, startX: 0, startY: 0, width: 0, currentX: 0 });
+      // 제스처 진행 중에만 이전 화면을 마운트하기 위한 상태 (드래그 프레임마다는 절대 setState 하지 않음)
+      const [active, setActive] = useState(false);
+
+      // 드래그 프레임: React를 거치지 않고 DOM 스타일을 직접 갱신해 부드럽게 움직입니다.
+      const applyDragFrame = () => {
+        rafRef.current = 0;
+        const g = gestureRef.current;
+        const width = g.width || 1;
+        const x = g.currentX;
+        const progress = Math.min(1, Math.max(0, x / width));
+        const cur = currentLayerRef.current;
+        const prev = prevLayerRef.current;
+        const dim = dimRef.current;
+        if (cur) {
+          cur.style.transition = 'none';
+          cur.style.transform = `translate3d(${x}px, 0, 0)`;
+        }
+        if (prev) {
+          prev.style.transition = 'none';
+          prev.style.transform = `translate3d(${(progress - 1) * PREV_SHIFT}%, 0, 0)`;
+        }
+        if (dim) {
+          dim.style.transition = 'none';
+          dim.style.opacity = (1 - progress) * 0.18;
+        }
+      };
+
+      const scheduleFrame = () => {
+        if (!rafRef.current) rafRef.current = window.requestAnimationFrame(applyDragFrame);
+      };
+
+      const settle = (toCommit) => {
+        const g = gestureRef.current;
+        const width = g.width || 1;
+        const cur = currentLayerRef.current;
+        const prev = prevLayerRef.current;
+        const dim = dimRef.current;
+        if (cur) {
+          cur.style.transition = `transform ${SETTLE_MS}ms ${SWIPE_EASE}`;
+          cur.style.transform = `translate3d(${toCommit ? width : 0}px, 0, 0)`;
+        }
+        if (prev) {
+          prev.style.transition = `transform ${SETTLE_MS}ms ${SWIPE_EASE}`;
+          prev.style.transform = `translate3d(${toCommit ? 0 : -PREV_SHIFT}%, 0, 0)`;
+        }
+        if (dim) {
+          dim.style.transition = `opacity ${SETTLE_MS}ms ${SWIPE_EASE}`;
+          dim.style.opacity = toCommit ? 0 : 0.18;
+        }
+        window.setTimeout(() => {
+          if (toCommit) onCommitBack();
+          setActive(false);
+        }, SETTLE_MS);
+      };
 
       const handleTouchStart = (e) => {
-        if (!backTarget || swipe.phase !== 'idle') return;
+        if (!backTarget || active) return;
         const t = e.touches[0];
         if (t.clientX > EDGE_ZONE_PX) return;
         const width = stageRef.current ? stageRef.current.clientWidth : window.innerWidth;
-        gestureRef.current = { tracking: true, decided: false, horizontal: false, startX: t.clientX, startY: t.clientY, width };
+        gestureRef.current = { tracking: true, decided: false, horizontal: false, activated: false, startX: t.clientX, startY: t.clientY, width, currentX: 0 };
       };
 
       const handleTouchMove = (e) => {
@@ -2247,64 +2337,45 @@
         }
         if (!g.horizontal) return;
         e.preventDefault();
-        const clamped = Math.max(0, Math.min(dx, g.width));
-        setSwipe({ x: clamped, phase: 'dragging' });
+        g.currentX = Math.max(0, Math.min(dx, g.width));
+        if (!g.activated) {
+          g.activated = true;
+          setActive(true); // 이전 화면을 한 번만 마운트 (이후 프레임은 ref 직접 조작)
+        }
+        scheduleFrame();
       };
 
       const finishGesture = () => {
+        if (rafRef.current) { window.cancelAnimationFrame(rafRef.current); rafRef.current = 0; }
         const g = gestureRef.current;
         if (!g.tracking || !g.horizontal) {
           g.tracking = false;
+          if (g.activated) { g.activated = false; setActive(false); }
           return;
         }
         g.tracking = false;
+        g.activated = false;
         const width = g.width || 1;
-        setSwipe((prev) => {
-          const progress = prev.x / width;
-          if (progress > COMMIT_THRESHOLD) {
-            window.setTimeout(() => {
-              onCommitBack();
-              setSwipe({ x: 0, phase: 'idle' });
-            }, SETTLE_MS);
-            return { x: width, phase: 'animating' };
-          }
-          window.setTimeout(() => {
-            setSwipe({ x: 0, phase: 'idle' });
-          }, SETTLE_MS);
-          return { x: 0, phase: 'animating' };
-        });
-      };
-
-      const width = gestureRef.current.width || (stageRef.current ? stageRef.current.clientWidth : window.innerWidth);
-      const progress = width ? Math.min(1, swipe.x / width) : 0;
-      const isIdle = swipe.phase === 'idle';
-
-      const currentStyle = isIdle ? undefined : {
-        transform: `translateX(${swipe.x}px)`,
-        transition: swipe.phase === 'animating' ? `transform ${SETTLE_MS}ms cubic-bezier(0.22,1,0.36,1)` : 'none'
-      };
-
-      const prevStyle = {
-        transform: `translateX(${(progress - 1) * 28}%)`,
-        transition: swipe.phase === 'animating' ? `transform ${SETTLE_MS}ms cubic-bezier(0.22,1,0.36,1)` : 'none'
+        const progress = g.currentX / width;
+        settle(progress > COMMIT_THRESHOLD);
       };
 
       return (
         <div
-          className="swipe-stage"
+          className={`swipe-stage${active ? ' active' : ''}`}
           ref={stageRef}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={finishGesture}
           onTouchCancel={finishGesture}
         >
-          {!isIdle && (
-            <div className="swipe-layer-prev" style={prevStyle}>
+          {active && (
+            <div className="swipe-layer-prev" ref={prevLayerRef} style={{ transform: `translate3d(${-PREV_SHIFT}%, 0, 0)` }}>
               {renderScreen(backTarget)}
-              <div className="swipe-dim" style={{ opacity: (1 - progress) * 0.18 }}></div>
+              <div className="swipe-dim" ref={dimRef} style={{ opacity: 0.18 }}></div>
             </div>
           )}
-          <div className={`swipe-layer-current${swipe.phase === 'dragging' ? ' dragging' : ''}`} style={currentStyle}>
+          <div className="swipe-layer-current" ref={currentLayerRef}>
             {renderScreen(screen)}
           </div>
         </div>
